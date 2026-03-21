@@ -8,5 +8,6 @@ router.post('/reset', GameController.reset);
 router.post('/assign-roles', GameController.assignRoles);
 router.post('/next-phase', GameController.nextPhase);
 router.post('/reveal-next', GameController.revealNext);
+router.post('/config', GameController.updateConfig);
 
 module.exports = router;

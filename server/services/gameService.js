@@ -2,29 +2,38 @@ const state = require('../models/state');
 const PlayerService = require('./playerService');
 
 /**
- * Role allocation rules based on player count.
- * Adjust to taste.
+ * Build role pool from Godfather's config settings.
+ * Falls back to automatic mafia count if set to 'random'.
  */
 function buildRolePool(playerCount) {
-  const roles = [];
+  const cfg = state.config;
 
-  if (playerCount <= 4) {
-    // 1 mafia, rest citizens
-    roles.push('mafia');
-    for (let i = 1; i < playerCount; i++) roles.push('citizen');
-  } else if (playerCount <= 6) {
-    // 1 mafia, 1 detective, rest citizens
-    roles.push('mafia', 'detective');
-    for (let i = 2; i < playerCount; i++) roles.push('citizen');
-  } else if (playerCount <= 9) {
-    // 2 mafia, 1 detective, 1 doctor, rest citizens
-    roles.push('mafia', 'mafia', 'detective', 'doctor');
-    for (let i = 4; i < playerCount; i++) roles.push('citizen');
+  // Determine mafia count
+  let mafiaCount;
+  if (cfg.mafiaCount === 'random') {
+    if (playerCount <= 4)       mafiaCount = 1;
+    else if (playerCount <= 9)  mafiaCount = 2;
+    else                        mafiaCount = 3;
   } else {
-    // 3 mafia, 1 detective, 1 doctor, rest citizens
-    roles.push('mafia', 'mafia', 'mafia', 'detective', 'doctor');
-    for (let i = 5; i < playerCount; i++) roles.push('citizen');
+    mafiaCount = Number(cfg.mafiaCount);
   }
+
+  const dodoCount      = Number(cfg.dodoCount)      || 0;
+  const detectiveCount = Number(cfg.detectiveCount) || 0;
+  const doctorCount    = Number(cfg.doctorCount)    || 0;
+
+  const specialCount = mafiaCount + dodoCount + detectiveCount + doctorCount;
+  if (specialCount >= playerCount) {
+    throw new Error('Too many special roles for the number of players. Reduce role counts.');
+  }
+
+  const roles = [];
+  for (let i = 0; i < mafiaCount;     i++) roles.push('mafia');
+  for (let i = 0; i < dodoCount;      i++) roles.push('dodo');
+  for (let i = 0; i < detectiveCount; i++) roles.push('detective');
+  for (let i = 0; i < doctorCount;    i++) roles.push('doctor');
+  // Fill the rest with citizens
+  while (roles.length < playerCount) roles.push('citizen');
 
   return roles;
 }
@@ -51,6 +60,13 @@ const GameService = {
     state.revealIndex = 0;
     state.nightActions = { mafiaTarget: null, doctorSave: null, detectiveCheck: null, detectiveResult: null };
     state.voting = { active: false, votes: {}, eliminated: null };
+    // Keep config intact so Godfather doesn't have to re-enter it
+  },
+
+  /** Update game configuration (mafia count, dodo, etc.) */
+  updateConfig(newConfig) {
+    state.config = { ...state.config, ...newConfig };
+    return state.config;
   },
 
   /** Assign roles randomly to all current players */
@@ -81,16 +97,13 @@ const GameService = {
     if (state.phase === 'reveal') {
       state.phase = 'night';
       state.round = 1;
-      // Reset night actions for first round
       state.nightActions = { mafiaTarget: null, doctorSave: null, detectiveCheck: null, detectiveResult: null };
     } else if (state.phase === 'night') {
       state.phase = 'day';
     } else if (state.phase === 'day') {
       state.phase = 'night';
       state.round += 1;
-      // Reset night actions for new round
       state.nightActions = { mafiaTarget: null, doctorSave: null, detectiveCheck: null, detectiveResult: null };
-      // Reset voting
       state.voting = { active: false, votes: {}, eliminated: null };
     }
     return state;
@@ -102,6 +115,7 @@ const GameService = {
       phase: state.phase,
       round: state.round,
       winner: state.winner,
+      config: state.config,
       players: state.players,
       alivePlayers: PlayerService.getAlivePlayers(),
       deadPlayers: PlayerService.getDeadPlayers(),
@@ -112,15 +126,23 @@ const GameService = {
   },
 
   /**
-   * Check win conditions.
-   * Mafia wins if mafia count >= alive citizens count.
-   * Citizens win if all mafia are dead.
-   * Returns 'mafia' | 'citizens' | null (game continues).
+   * Check win conditions after every elimination.
+   * - DoDo wins alone if voted out during the day (checked in votingService).
+   * - Citizens win if all mafia are dead.
+   * - Mafia wins if mafia count >= alive non-mafia count.
+   * Returns 'mafia' | 'citizens' | 'dodo' | null (game continues).
    */
-  checkWinCondition() {
+  checkWinCondition(eliminatedRole) {
+    // DoDo wins if they were the one voted out during day
+    if (eliminatedRole === 'dodo') {
+      state.winner = 'dodo';
+      state.phase = 'ended';
+      return 'dodo';
+    }
+
     const alive = PlayerService.getAlivePlayers();
-    const aliveMafia = alive.filter(p => p.role === 'mafia').length;
-    const aliveCitizens = alive.filter(p => p.role !== 'mafia').length;
+    const aliveMafia    = alive.filter(p => p.role === 'mafia').length;
+    const aliveNonMafia = alive.filter(p => p.role !== 'mafia').length;
 
     if (aliveMafia === 0) {
       state.winner = 'citizens';
@@ -128,7 +150,7 @@ const GameService = {
       return 'citizens';
     }
 
-    if (aliveMafia >= aliveCitizens) {
+    if (aliveMafia >= aliveNonMafia) {
       state.winner = 'mafia';
       state.phase = 'ended';
       return 'mafia';

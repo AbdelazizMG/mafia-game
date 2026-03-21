@@ -46,6 +46,16 @@ const GameController = {
     state.players[state.revealIndex].isRevealed = true;
     state.revealIndex += 1;
     res.json({ revealIndex: state.revealIndex, players: state.players });
+  },
+
+  /** Update lobby configuration */
+  updateConfig(req, res) {
+    try {
+      const config = GameService.updateConfig(req.body);
+      res.json({ config });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
   }
 };
 

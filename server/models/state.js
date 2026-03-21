@@ -7,7 +7,15 @@ const state = {
   players: [],          // array of Player objects
   phase: 'lobby',       // lobby | reveal | night | day | ended
   round: 0,
-  winner: null,         // null | 'mafia' | 'citizens'
+  winner: null,         // null | 'mafia' | 'citizens' | 'dodo'
+
+  // Godfather-configurable role counts
+  config: {
+    mafiaCount: 'random', // number or 'random'
+    dodoCount: 0,         // 0 or 1
+    detectiveCount: 1,    // fixed at 1
+    doctorCount: 1,       // fixed at 1
+  },
 
   // Night action targets (reset each night)
   nightActions: {

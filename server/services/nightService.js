@@ -49,8 +49,8 @@ const NightService = {
       PlayerService.eliminatePlayer(mafiaTarget);
     }
 
-    // Check win condition after night
-    GameService.checkWinCondition();
+    // Check win condition after night (night kills never trigger DoDo win)
+    GameService.checkWinCondition(null);
 
     const killedPlayer = state.players.find(p => p.id === mafiaTarget);
 
