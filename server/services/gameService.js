@@ -5,8 +5,8 @@ const PlayerService = require('./playerService');
 
 const SCORE_MAP = {
   citizen:   1,
-  detective: 1,   // detective is on the citizens' side
-  doctor:    1,   // doctor is on the citizens' side
+  detective: 1,
+  doctor:    1,
   dodo:      2,
   mafia:     3,
 };
@@ -53,19 +53,15 @@ function shuffle(arr) {
 
 const GameService = {
 
-  /**
-   * Soft reset: keeps the roster and scores intact.
-   * Only resets the active game state so names stay in the lobby.
-   */
   resetGame() {
-    state.players   = [];
-    state.phase     = 'lobby';
-    state.round     = 0;
-    state.winner    = null;
-    state.revealIndex = 0;
+    state.players      = [];
+    state.phase        = 'lobby';
+    state.round        = 0;
+    state.winner       = null;
+    state.revealIndex  = 0;
     state.nightActions = { mafiaTarget: null, doctorSave: null, detectiveCheck: null, detectiveResult: null };
     state.voting       = { active: false, votes: {}, eliminated: null };
-    // roster and config intentionally NOT reset
+    // roster and config intentionally NOT reset — names and scores persist
   },
 
   updateConfig(newConfig) {
@@ -74,7 +70,7 @@ const GameService = {
   },
 
   assignRoles() {
-    // Build the active player list fresh from the roster on each assignment
+    // Always rebuild active players from the roster before assigning
     PlayerService.buildPlayersFromRoster();
 
     const players = state.players;
@@ -82,7 +78,7 @@ const GameService = {
 
     const rolePool = shuffle(buildRolePool(players.length));
     players.forEach((player, i) => {
-      player.role = rolePool[i];
+      player.role       = rolePool[i];
       player.isRevealed = false;
     });
 
@@ -108,7 +104,7 @@ const GameService = {
       state.phase = 'night';
       state.round += 1;
       state.nightActions = { mafiaTarget: null, doctorSave: null, detectiveCheck: null, detectiveResult: null };
-      state.voting = { active: false, votes: {}, eliminated: null };
+      state.voting       = { active: false, votes: {}, eliminated: null };
     }
     return state;
   },
@@ -119,7 +115,7 @@ const GameService = {
       round:        state.round,
       winner:       state.winner,
       config:       state.config,
-      roster:       state.roster,
+      roster:       state.roster,          // needed by WinScreen for scores
       players:      state.players,
       alivePlayers: PlayerService.getAlivePlayers(),
       deadPlayers:  PlayerService.getDeadPlayers(),
@@ -129,15 +125,13 @@ const GameService = {
     };
   },
 
-  /**
-   * Check win conditions and award scores to winners.
-   * eliminatedRole: the role of the player just eliminated (used for DoDo detection).
-   */
   checkWinCondition(eliminatedRole) {
-    // DoDo wins if they were voted out during the day
+    console.log('[checkWinCondition] eliminatedRole =', eliminatedRole); // debug line
+
+    // DoDo wins alone if voted out by the town during the day
     if (eliminatedRole === 'dodo') {
-      state.winner  = 'dodo';
-      state.phase   = 'ended';
+      state.winner = 'dodo';
+      state.phase  = 'ended';
       this._awardScores('dodo');
       return 'dodo';
     }
@@ -163,16 +157,11 @@ const GameService = {
     return null;
   },
 
-  /**
-   * Award points to the winning team via the roster.
-   * winner: 'mafia' | 'citizens' | 'dodo'
-   */
   _awardScores(winner) {
     state.players.forEach(player => {
       let wins = false;
-
-      if (winner === 'dodo' && player.role === 'dodo') wins = true;
-      if (winner === 'mafia' && player.role === 'mafia') wins = true;
+      if (winner === 'dodo'     && player.role === 'dodo')  wins = true;
+      if (winner === 'mafia'    && player.role === 'mafia') wins = true;
       if (winner === 'citizens' && player.role !== 'mafia' && player.role !== 'dodo') wins = true;
 
       if (wins) {
