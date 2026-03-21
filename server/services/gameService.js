@@ -1,6 +1,5 @@
 // server/services/gameService.js
 
-const state = require('../models/state');
 const PlayerService = require('./playerService');
 
 const SCORE_MAP = {
@@ -11,7 +10,7 @@ const SCORE_MAP = {
   mafia:     3,
 };
 
-function buildRolePool(playerCount) {
+function buildRolePool(state, playerCount) {
   const cfg = state.config;
 
   let mafiaCount;
@@ -29,7 +28,7 @@ function buildRolePool(playerCount) {
 
   const specialCount = mafiaCount + dodoCount + detectiveCount + doctorCount;
   if (specialCount >= playerCount) {
-    throw new Error('Too many special roles for the number of players. Reduce role counts.');
+    throw new Error('Too many special roles for the number of players.');
   }
 
   const roles = [];
@@ -38,7 +37,6 @@ function buildRolePool(playerCount) {
   for (let i = 0; i < detectiveCount; i++) roles.push('detective');
   for (let i = 0; i < doctorCount;    i++) roles.push('doctor');
   while (roles.length < playerCount)       roles.push('citizen');
-
   return roles;
 }
 
@@ -53,7 +51,7 @@ function shuffle(arr) {
 
 const GameService = {
 
-  resetGame() {
+  resetGame(state) {
     state.players      = [];
     state.phase        = 'lobby';
     state.round        = 0;
@@ -61,39 +59,35 @@ const GameService = {
     state.revealIndex  = 0;
     state.nightActions = { mafiaTarget: null, doctorSave: null, detectiveCheck: null, detectiveResult: null };
     state.voting       = { active: false, votes: {}, eliminated: null };
-    // roster and config intentionally NOT reset — names and scores persist
   },
 
-  updateConfig(newConfig) {
+  updateConfig(state, newConfig) {
     state.config = { ...state.config, ...newConfig };
     return state.config;
   },
 
-  assignRoles() {
-    // Always rebuild active players from the roster before assigning
-    PlayerService.buildPlayersFromRoster();
-
+  assignRoles(state) {
+    PlayerService.buildPlayersFromRoster(state);
     const players = state.players;
     if (players.length < 3) throw new Error('Need at least 3 players to assign roles');
 
-    const rolePool = shuffle(buildRolePool(players.length));
+    const rolePool = shuffle(buildRolePool(state, players.length));
     players.forEach((player, i) => {
       player.role       = rolePool[i];
       player.isRevealed = false;
     });
-
     state.revealIndex = 0;
     return players;
   },
 
-  startGame() {
+  startGame(state) {
     if (state.players.some(p => !p.role)) throw new Error('Roles must be assigned before starting');
     state.phase = 'reveal';
     state.round = 0;
     return state;
   },
 
-  nextPhase() {
+  nextPhase(state) {
     if (state.phase === 'reveal') {
       state.phase = 'night';
       state.round = 1;
@@ -109,67 +103,63 @@ const GameService = {
     return state;
   },
 
-  getGameState() {
+  getGameState(state) {
     return {
       phase:        state.phase,
       round:        state.round,
       winner:       state.winner,
       config:       state.config,
-      roster:       state.roster,          // needed by WinScreen for scores
+      roster:       state.roster,
       players:      state.players,
-      alivePlayers: PlayerService.getAlivePlayers(),
-      deadPlayers:  PlayerService.getDeadPlayers(),
+      alivePlayers: PlayerService.getAlivePlayers(state),
+      deadPlayers:  PlayerService.getDeadPlayers(state),
       nightActions: state.nightActions,
       voting:       state.voting,
-      revealIndex:  state.revealIndex
+      revealIndex:  state.revealIndex,
     };
   },
 
-  checkWinCondition(eliminatedRole) {
-    console.log('[checkWinCondition] eliminatedRole =', eliminatedRole); // debug line
-
-    // DoDo wins alone if voted out by the town during the day
+  checkWinCondition(state, eliminatedRole) {
     if (eliminatedRole === 'dodo') {
       state.winner = 'dodo';
       state.phase  = 'ended';
-      this._awardScores('dodo');
+      this._awardScores(state, 'dodo');
       return 'dodo';
     }
 
-    const alive         = PlayerService.getAlivePlayers();
+    const alive         = PlayerService.getAlivePlayers(state);
     const aliveMafia    = alive.filter(p => p.role === 'mafia').length;
     const aliveNonMafia = alive.filter(p => p.role !== 'mafia').length;
 
     if (aliveMafia === 0) {
       state.winner = 'citizens';
       state.phase  = 'ended';
-      this._awardScores('citizens');
+      this._awardScores(state, 'citizens');
       return 'citizens';
     }
 
     if (aliveMafia >= aliveNonMafia) {
       state.winner = 'mafia';
       state.phase  = 'ended';
-      this._awardScores('mafia');
+      this._awardScores(state, 'mafia');
       return 'mafia';
     }
 
     return null;
   },
 
-  _awardScores(winner) {
+  _awardScores(state, winner) {
     state.players.forEach(player => {
       let wins = false;
       if (winner === 'dodo'     && player.role === 'dodo')  wins = true;
       if (winner === 'mafia'    && player.role === 'mafia') wins = true;
       if (winner === 'citizens' && player.role !== 'mafia' && player.role !== 'dodo') wins = true;
-
       if (wins) {
         const points = SCORE_MAP[player.role] ?? 1;
-        PlayerService.addScore(player.id, points);
+        PlayerService.addScore(state, player.id, points);
       }
     });
-  }
+  },
 };
 
 module.exports = GameService;

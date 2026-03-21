@@ -1,9 +1,13 @@
+// server/controllers/nightController.js
+
 const NightService = require('../services/nightService');
+const { getRoom }  = require('../models/state');
 
 const NightController = {
   setMafiaTarget(req, res) {
     try {
-      const actions = NightService.setMafiaTarget(req.body.playerId);
+      const state   = getRoom(req.params.room);
+      const actions = NightService.setMafiaTarget(state, req.body.playerId);
       res.json({ nightActions: actions });
     } catch (err) {
       res.status(400).json({ error: err.message });
@@ -12,7 +16,8 @@ const NightController = {
 
   setDoctorSave(req, res) {
     try {
-      const actions = NightService.setDoctorSave(req.body.playerId);
+      const state   = getRoom(req.params.room);
+      const actions = NightService.setDoctorSave(state, req.body.playerId);
       res.json({ nightActions: actions });
     } catch (err) {
       res.status(400).json({ error: err.message });
@@ -21,7 +26,8 @@ const NightController = {
 
   setDetectiveCheck(req, res) {
     try {
-      const actions = NightService.setDetectiveCheck(req.body.playerId);
+      const state   = getRoom(req.params.room);
+      const actions = NightService.setDetectiveCheck(state, req.body.playerId);
       res.json({ nightActions: actions });
     } catch (err) {
       res.status(400).json({ error: err.message });
@@ -30,12 +36,13 @@ const NightController = {
 
   resolveNight(req, res) {
     try {
-      const result = NightService.resolveNightActions();
+      const state  = getRoom(req.params.room);
+      const result = NightService.resolveNightActions(state);
       res.json(result);
     } catch (err) {
       res.status(400).json({ error: err.message });
     }
-  }
+  },
 };
 
 module.exports = NightController;

@@ -1,14 +1,14 @@
 // server/services/playerService.js
 
-const state = require('../models/state');
 const { createPlayer, createRosterEntry } = require('../models/player');
 
+/**
+ * PlayerService now receives `state` as a parameter (the room's state).
+ * No more importing the global singleton.
+ */
 const PlayerService = {
 
-  // ── Roster (persists across games) ──────────────────────────────
-
-  /** Add a new player to the permanent roster. */
-  addToRoster(name) {
+  addToRoster(state, name) {
     const trimmed = name.trim();
     if (!trimmed) throw new Error('Player name cannot be empty');
     if (state.roster.find(p => p.name.toLowerCase() === trimmed.toLowerCase())) {
@@ -19,41 +19,23 @@ const PlayerService = {
     return entry;
   },
 
-  /** Remove a player from the roster entirely. */
-  removeFromRoster(id) {
+  removeFromRoster(state, id) {
     const index = state.roster.findIndex(p => p.id === id);
     if (index === -1) return null;
     const [removed] = state.roster.splice(index, 1);
     return removed;
   },
 
-  /**
-   * Add points to a roster entry after a game ends.
-   * Points: citizen = 1, dodo = 2, mafia = 3
-   */
-  addScore(id, points) {
+  addScore(state, id, points) {
     const entry = state.roster.find(p => p.id === id);
     if (entry) entry.score += points;
   },
 
-  // ── Active game players ─────────────────────────────────────────
-
-  /**
-   * Populate state.players from the full roster for a new game.
-   * All roster members participate by default.
-   */
-  buildPlayersFromRoster() {
+  buildPlayersFromRoster(state) {
     state.players = state.roster.map(entry => createPlayer(entry.id, entry.name));
   },
 
-  setRole(playerId, role) {
-    const player = state.players.find(p => p.id === playerId);
-    if (!player) throw new Error('Player not found');
-    player.role = role;
-    return player;
-  },
-
-  eliminatePlayer(playerId) {
+  eliminatePlayer(state, playerId) {
     const player = state.players.find(p => p.id === playerId);
     if (!player) throw new Error('Player not found');
     if (!player.isAlive) throw new Error('Player is already dead');
@@ -61,11 +43,11 @@ const PlayerService = {
     return player;
   },
 
-  getAlivePlayers() {
+  getAlivePlayers(state) {
     return state.players.filter(p => p.isAlive);
   },
 
-  getDeadPlayers() {
+  getDeadPlayers(state) {
     return state.players.filter(p => !p.isAlive);
   }
 };

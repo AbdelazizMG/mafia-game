@@ -1,28 +1,33 @@
+// server/controllers/gameController.js
+
 const GameService = require('../services/gameService');
-const state = require('../models/state');
+const { getRoom } = require('../models/state');
 
 const GameController = {
   getState(req, res) {
-    res.json(GameService.getGameState());
+    const state = getRoom(req.params.room);
+    res.json(GameService.getGameState(state));
   },
 
   start(req, res) {
     try {
-      const newState = GameService.startGame();
-      res.json(newState);
+      const state = getRoom(req.params.room);
+      res.json(GameService.startGame(state));
     } catch (err) {
       res.status(400).json({ error: err.message });
     }
   },
 
   reset(req, res) {
-    GameService.resetGame();
-    res.json({ message: 'Game reset', state: GameService.getGameState() });
+    const state = getRoom(req.params.room);
+    GameService.resetGame(state);
+    res.json({ message: 'Game reset', state: GameService.getGameState(state) });
   },
 
   assignRoles(req, res) {
     try {
-      const players = GameService.assignRoles();
+      const state   = getRoom(req.params.room);
+      const players = GameService.assignRoles(state);
       res.json({ players });
     } catch (err) {
       res.status(400).json({ error: err.message });
@@ -31,15 +36,15 @@ const GameController = {
 
   nextPhase(req, res) {
     try {
-      const newState = GameService.nextPhase();
-      res.json(newState);
+      const state = getRoom(req.params.room);
+      res.json(GameService.nextPhase(state));
     } catch (err) {
       res.status(400).json({ error: err.message });
     }
   },
 
-  /** Advance the role-reveal pointer by one */
   revealNext(req, res) {
+    const state = getRoom(req.params.room);
     if (state.revealIndex >= state.players.length) {
       return res.status(400).json({ error: 'All roles have been revealed' });
     }
@@ -48,15 +53,15 @@ const GameController = {
     res.json({ revealIndex: state.revealIndex, players: state.players });
   },
 
-  /** Update lobby configuration */
   updateConfig(req, res) {
     try {
-      const config = GameService.updateConfig(req.body);
+      const state  = getRoom(req.params.room);
+      const config = GameService.updateConfig(state, req.body);
       res.json({ config });
     } catch (err) {
       res.status(400).json({ error: err.message });
     }
-  }
+  },
 };
 
 module.exports = GameController;

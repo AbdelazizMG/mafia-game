@@ -1,18 +1,18 @@
 // server/controllers/playerController.js
 
 const PlayerService = require('../services/playerService');
-const state = require('../models/state');
+const { getRoom } = require('../models/state');
 
 const PlayerController = {
-  // Returns the roster (permanent list with scores)
   getPlayers(req, res) {
+    const state = getRoom(req.params.room);
     res.json({ players: state.roster });
   },
 
   addPlayer(req, res) {
     try {
-      const { name } = req.body;
-      const entry = PlayerService.addToRoster(name);
+      const state = getRoom(req.params.room);
+      const entry = PlayerService.addToRoster(state, req.body.name);
       res.status(201).json({ player: entry });
     } catch (err) {
       res.status(400).json({ error: err.message });
@@ -21,7 +21,8 @@ const PlayerController = {
 
   removePlayer(req, res) {
     try {
-      const removed = PlayerService.removeFromRoster(req.params.id);
+      const state   = getRoom(req.params.room);
+      const removed = PlayerService.removeFromRoster(state, req.params.id);
       if (!removed) return res.status(404).json({ error: 'Player not found' });
       res.json({ removed });
     } catch (err) {
@@ -29,11 +30,11 @@ const PlayerController = {
     }
   },
 
-  // Reset all scores to 0 without removing players
   resetScores(req, res) {
+    const state = getRoom(req.params.room);
     state.roster.forEach(p => p.score = 0);
     res.json({ roster: state.roster });
-  }
+  },
 };
 
 module.exports = PlayerController;

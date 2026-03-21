@@ -1,9 +1,13 @@
+// server/controllers/voteController.js
+
 const VotingService = require('../services/votingService');
+const { getRoom } = require('../models/state');
 
 const VoteController = {
   startVoting(req, res) {
     try {
-      const voting = VotingService.startVoting();
+      const state  = getRoom(req.params.room);
+      const voting = VotingService.startVoting(state);
       res.json({ voting });
     } catch (err) {
       res.status(400).json({ error: err.message });
@@ -12,8 +16,8 @@ const VoteController = {
 
   castVote(req, res) {
     try {
-      const { playerId } = req.body;
-      const votes = VotingService.castVote(playerId);
+      const state = getRoom(req.params.room);
+      const votes = VotingService.castVote(state, req.body.playerId);
       res.json({ votes });
     } catch (err) {
       res.status(400).json({ error: err.message });
@@ -22,7 +26,8 @@ const VoteController = {
 
   tallyVotes(req, res) {
     try {
-      const result = VotingService.tallyVotes();
+      const state  = getRoom(req.params.room);
+      const result = VotingService.tallyVotes(state);
       res.json(result);
     } catch (err) {
       res.status(400).json({ error: err.message });
@@ -30,8 +35,9 @@ const VoteController = {
   },
 
   getResult(req, res) {
-    res.json(VotingService.getVotingResult());
-  }
+    const state = getRoom(req.params.room);
+    res.json(VotingService.getVotingResult(state));
+  },
 };
 
 module.exports = VoteController;

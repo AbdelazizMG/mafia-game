@@ -11,15 +11,16 @@ export function GameProvider({ children }) {
   const [error, setError]             = useState(null);
   const [nightResult, setNightResult] = useState(null);
 
-  const refresh = useCallback(async () => {
-    try {
-      const state = await api.getGameState();
-      setGameState(state);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-    }
-  }, []);
+const refresh = useCallback(async () => {
+  try {
+    const state = await api.getGameState();
+    if (!state) return;  // no room code yet, ignore
+    setGameState(state);
+    setError(null);
+  } catch (err) {
+    setError(err.message);
+  }
+}, []);
 
   const act = useCallback(async (fn) => {
     setLoading(true);

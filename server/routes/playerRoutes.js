@@ -1,7 +1,5 @@
-// server/routes/playerRoutes.js
-
 const express = require('express');
-const router = express.Router();
+const router  = express.Router({ mergeParams: true });
 const PlayerController = require('../controllers/playerController');
 
 router.get('/',              PlayerController.getPlayers);

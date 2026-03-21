@@ -1,44 +1,57 @@
 // server/models/state.js
 
 /**
- * Central in-memory state for the entire game.
- * All services read/write this object.
- * Easy to swap for a database later.
+ * Instead of one global state, we keep a map of roomCode → roomState.
+ * Each room is a completely isolated game.
  */
-const state = {
-  // Persisted across games — names and scores survive reset
-  roster: [],           // [{ id, name, score }] — permanent player list
+const rooms = {};
 
-  players: [],          // active Player objects for the current game
-  phase: 'lobby',       // lobby | reveal | night | day | ended
-  round: 0,
-  winner: null,         // null | 'mafia' | 'citizens' | 'dodo'
+/** Returns a fresh state object for a new room */
+function createRoomState() {
+  return {
+    roster:  [],
+    players: [],
+    phase:   'lobby',
+    round:   0,
+    winner:  null,
+    config: {
+      mafiaCount:    'random',
+      dodoCount:     0,
+      detectiveCount: 1,
+      doctorCount:   1,
+    },
+    nightActions: {
+      mafiaTarget:     null,
+      doctorSave:      null,
+      detectiveCheck:  null,
+      detectiveResult: null,
+    },
+    voting: {
+      active:    false,
+      votes:     {},
+      eliminated: null,
+    },
+    revealIndex: 0,
+  };
+}
 
-  // Godfather-configurable role counts
-  config: {
-    mafiaCount: 'random',
-    dodoCount: 0,
-    detectiveCount: 1,
-    doctorCount: 1,
-  },
+/**
+ * Get an existing room's state, or create a new one if it doesn't exist.
+ * Room codes are case-insensitive — always stored uppercase.
+ */
+function getRoom(roomCode) {
+  const code = roomCode.toUpperCase();
+  if (!rooms[code]) {
+    rooms[code] = createRoomState();
+  }
+  return rooms[code];
+}
 
-  // Night action targets (reset each night)
-  nightActions: {
-    mafiaTarget: null,
-    doctorSave: null,
-    detectiveCheck: null,
-    detectiveResult: null
-  },
+/**
+ * Delete a room entirely (optional cleanup).
+ */
+function deleteRoom(roomCode) {
+  delete rooms[roomCode.toUpperCase()];
+}
 
-  // Voting state
-  voting: {
-    active: false,
-    votes: {},
-    eliminated: null
-  },
-
-  // Role reveal pointer
-  revealIndex: 0
-};
-
-module.exports = state;
+module.exports = { getRoom, deleteRoom };
