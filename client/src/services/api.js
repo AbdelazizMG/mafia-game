@@ -1,6 +1,8 @@
 // client/src/services/api.js
 
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+// In production (Render), frontend and backend share the same domain.
+// In local dev, we still point to localhost:3001.
+const BASE_URL = process.env.REACT_APP_API_URL || '';
 
 async function request(method, path, body) {
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -29,13 +31,13 @@ export const revealNext    = ()       => request('POST', '/game/reveal-next');
 export const updateConfig  = (config) => request('POST', '/game/config', config);
 
 // Voting
-export const startVoting   = ()           => request('POST', '/vote/start');
-export const castVote      = (playerId)   => request('POST', '/vote', { playerId });
-export const tallyVotes    = ()           => request('POST', '/vote/tally');
-export const getVoteResult = ()           => request('GET',  '/vote/result');
+export const startVoting   = ()         => request('POST', '/vote/start');
+export const castVote      = (playerId) => request('POST', '/vote', { playerId });
+export const tallyVotes    = ()         => request('POST', '/vote/tally');
+export const getVoteResult = ()         => request('GET',  '/vote/result');
 
 // Night actions
-export const setMafiaTarget    = (playerId) => request('POST', '/night/mafia',      { playerId });
-export const setDoctorSave     = (playerId) => request('POST', '/night/doctor',     { playerId });
-export const setDetectiveCheck = (playerId) => request('POST', '/night/detective',  { playerId });
+export const setMafiaTarget    = (playerId) => request('POST', '/night/mafia',     { playerId });
+export const setDoctorSave     = (playerId) => request('POST', '/night/doctor',    { playerId });
+export const setDetectiveCheck = (playerId) => request('POST', '/night/detective', { playerId });
 export const resolveNight      = ()         => request('POST', '/night/resolve');
