@@ -1,0 +1,30 @@
+version: '3.9'
+
+services:
+  # ── Backend (Node.js / Express) ──
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: mafia-backend
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      CLIENT_ORIGIN: http://localhost:3000
+    restart: unless-stopped
+
+  # ── Frontend (React + nginx) ──
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        # Tell React where the API lives (browser makes these calls)
+        REACT_APP_API_URL: http://localhost:3001
+    container_name: mafia-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped

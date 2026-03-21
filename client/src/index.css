@@ -1,0 +1,228 @@
+/* ── Design Tokens ── */
+:root {
+  --bg: #0f0f0f;
+  --bg-card: #1a1a1a;
+  --bg-card2: #222;
+  --border: #333;
+  --accent: #c0392b;
+  --accent-hover: #e74c3c;
+  --gold: #d4a843;
+  --text: #f0ece4;
+  --text-muted: #888;
+  --text-dim: #555;
+  --green: #27ae60;
+  --blue: #2980b9;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.5);
+}
+
+/* ── Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* ── Layout ── */
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+
+.page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 24px 16px 60px;
+  width: 100%;
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.btn-primary   { background: var(--accent); color: #fff; }
+.btn-primary:hover:not(:disabled)   { background: var(--accent-hover); }
+.btn-secondary { background: #2a2a2a; color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover:not(:disabled) { background: #333; }
+.btn-success   { background: var(--green); color: #fff; }
+.btn-success:hover:not(:disabled)   { opacity: 0.85; }
+.btn-gold      { background: var(--gold); color: #111; }
+.btn-gold:hover:not(:disabled)      { opacity: 0.85; }
+.btn-danger    { background: #7b1a1a; color: #ff9999; border: 1px solid #b22; }
+.btn-danger:hover:not(:disabled)    { background: #9b2020; }
+.btn-sm { padding: 6px 12px; font-size: 13px; }
+.btn-full { width: 100%; }
+
+/* ── Inputs ── */
+.input {
+  background: #111;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 15px;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.input:focus { border-color: var(--accent); }
+.input::placeholder { color: var(--text-dim); }
+
+/* ── Role badges ── */
+.role-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.role-mafia      { background: #3d0a0a; color: #ff6b6b; border: 1px solid #7b1a1a; }
+.role-citizen    { background: #0d2a1a; color: #5dba7e; border: 1px solid #1a5e35; }
+.role-detective  { background: #0d1e3d; color: #6baeff; border: 1px solid #1a3a7b; }
+.role-doctor     { background: #2a200d; color: #f0c060; border: 1px solid #7b5a1a; }
+
+/* ── Phase indicator ── */
+.phase-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.phase-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.phase-dot.night  { background: #6b5dba; box-shadow: 0 0 8px #6b5dba; }
+.phase-dot.day    { background: #e0c050; box-shadow: 0 0 8px #e0c050; }
+.phase-dot.lobby  { background: #888; }
+.phase-dot.reveal { background: #5dba9e; box-shadow: 0 0 8px #5dba9e; }
+.phase-dot.ended  { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+/* ── Player list item ── */
+.player-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+  transition: opacity 0.2s;
+}
+.player-item.dead { opacity: 0.4; }
+.player-item .player-name { flex: 1; font-size: 15px; }
+.player-avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: #2a2a2a;
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 13px; color: var(--gold);
+  flex-shrink: 0;
+}
+.player-status { font-size: 12px; color: var(--text-muted); }
+
+/* ── Error / Toast ── */
+.error-banner {
+  background: #3d0a0a;
+  color: #ff9999;
+  border: 1px solid #7b1a1a;
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+/* ── Section headings ── */
+h1 { font-size: 24px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 500; }
+h3 { font-size: 15px; font-weight: 500; color: var(--text-muted); }
+
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+/* ── Divider ── */
+.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+/* ── Grid helpers ── */
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.gap-8  { gap: 8px; }
+.gap-12 { gap: 12px; }
+.gap-16 { gap: 16px; }
+.mt-8   { margin-top: 8px; }
+.mt-16  { margin-top: 16px; }
+.text-muted { color: var(--text-muted); font-size: 13px; }
+.text-gold  { color: var(--gold); }
+.text-center { text-align: center; }
+
+/* ── Win screen ── */
+.win-screen {
+  text-align: center;
+  padding: 60px 20px;
+}
+.win-screen .win-title { font-size: 36px; font-weight: 700; margin-bottom: 8px; }
+.win-screen .win-sub   { color: var(--text-muted); font-size: 16px; }
+.win-mafia   .win-title { color: #ff6b6b; }
+.win-citizens .win-title { color: #5dba7e; }
+
+/* ── Voting ── */
+.vote-count {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 24px;
+  text-align: center;
+}
+
+/* ── Night result banner ── */
+.night-result {
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.night-result.kill   { background: #3d0a0a; border: 1px solid #7b1a1a; color: #ff9999; }
+.night-result.saved  { background: #0d2a1a; border: 1px solid #1a5e35; color: #5dba7e; }
