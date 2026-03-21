@@ -1,18 +1,13 @@
+// client/src/components/PlayerList.js
+
 import React from 'react';
 import { useGame } from '../context/GameContext';
 import { removePlayer } from '../services/api';
 
-// Returns initials from a name ("John Doe" → "JD", "Alice" → "A")
 function initials(name) {
   return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 }
 
-/**
- * Renders the list of players.
- * showRoles: show role badges (Godfather view during game)
- * showRemove: show remove buttons (lobby phase)
- * showStatus: show alive/dead status
- */
 export default function PlayerList({ showRoles = false, showRemove = false, showStatus = false }) {
   const { players, act } = useGame();
 
@@ -32,8 +27,22 @@ export default function PlayerList({ showRoles = false, showRemove = false, show
 
           <span className="player-name">
             {player.name}
-            {!player.isAlive && <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--text-dim)' }}>✝</span>}
+            {!player.isAlive && (
+              <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--text-dim)' }}>✝</span>
+            )}
           </span>
+
+          {/* Silenced badge */}
+          {player.isSilenced && player.isAlive && (
+            <span style={{
+              fontSize: 11, fontWeight: 600,
+              background: '#1a1a2e', border: '1px solid #3a3a6e',
+              color: '#a0a0ff', borderRadius: 20,
+              padding: '2px 8px', letterSpacing: '0.04em',
+            }}>
+              🤫 Silenced
+            </span>
+          )}
 
           {showRoles && player.role && (
             <span className={`role-badge role-${player.role}`}>{player.role}</span>

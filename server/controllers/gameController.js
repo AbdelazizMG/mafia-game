@@ -62,6 +62,16 @@ const GameController = {
       res.status(400).json({ error: err.message });
     }
   },
+
+  useSilence(req, res) {
+    try {
+      const state   = getRoom(req.params.room);
+      const silence = GameService.useSilence(state, req.body.playerId);
+      res.json({ silence });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
+  },
 };
 
 module.exports = GameController;

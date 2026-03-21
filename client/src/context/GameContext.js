@@ -1,26 +1,25 @@
-// client/src/context/GameContext.js
-
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import * as api from '../services/api';
 
 const GameContext = createContext(null);
 
 export function GameProvider({ children }) {
-  const [gameState, setGameState]     = useState(null);
-  const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState(null);
-  const [nightResult, setNightResult] = useState(null);
+  const [gameState, setGameState]       = useState(null);
+  const [loading, setLoading]           = useState(false);
+  const [error, setError]               = useState(null);
+  const [nightResult, setNightResult]   = useState(null);
+  const [nightResolved, setNightResolved] = useState(false); // true after resolve, reset each new night
 
-const refresh = useCallback(async () => {
-  try {
-    const state = await api.getGameState();
-    if (!state) return;  // no room code yet, ignore
-    setGameState(state);
-    setError(null);
-  } catch (err) {
-    setError(err.message);
-  }
-}, []);
+  const refresh = useCallback(async () => {
+    try {
+      const state = await api.getGameState();
+      if (!state) return;
+      setGameState(state);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, []);
 
   const act = useCallback(async (fn) => {
     setLoading(true);
@@ -43,16 +42,18 @@ const refresh = useCallback(async () => {
     error,
     nightResult,
     setNightResult,
+    nightResolved,
+    setNightResolved,
     refresh,
     act,
     phase:        gameState?.phase,
-    // roster has scores; players has roles/alive status
     roster:       gameState?.roster       || [],
     players:      gameState?.players      || [],
     alivePlayers: gameState?.alivePlayers || [],
     deadPlayers:  gameState?.deadPlayers  || [],
     voting:       gameState?.voting,
     nightActions: gameState?.nightActions,
+    silence:      gameState?.silence,
     winner:       gameState?.winner,
     round:        gameState?.round,
   };

@@ -26,7 +26,21 @@ const NightService = {
     return state.nightActions;
   },
 
-  resolveNightActions(state) {
+  /**
+   * Resolve all night actions at once.
+   * silencePlayerId: optional — if provided, apply silence before resolving kills.
+   */
+  resolveNightActions(state, silencePlayerId) {
+    // Apply silence if provided and not already used
+    if (silencePlayerId && !state.silence.used) {
+      const target = state.players.find(p => p.id === silencePlayerId);
+      if (target && target.isAlive && target.role !== 'mafia') {
+        target.isSilenced        = true;
+        state.silence.used       = true;
+        state.silence.silencedId = silencePlayerId;
+      }
+    }
+
     const { mafiaTarget, doctorSave } = state.nightActions;
 
     if (!mafiaTarget) {

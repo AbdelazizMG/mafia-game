@@ -36,8 +36,10 @@ const NightController = {
 
   resolveNight(req, res) {
     try {
-      const state  = getRoom(req.params.room);
-      const result = NightService.resolveNightActions(state);
+      const state            = getRoom(req.params.room);
+      // silencePlayerId is optional — sent from frontend only if Godfather picked someone
+      const silencePlayerId  = req.body.silencePlayerId || null;
+      const result           = NightService.resolveNightActions(state, silencePlayerId);
       res.json(result);
     } catch (err) {
       res.status(400).json({ error: err.message });

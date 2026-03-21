@@ -1,20 +1,20 @@
-// client/src/components/VotingPanel.js
-
 import React, { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
 import { startVoting, castVote, tallyVotes } from '../services/api';
 
 export default function VotingPanel() {
-  const { alivePlayers, voting, act, players } = useGame();
+  const { alivePlayers, voting, act, players, silence, nightResolved, setNightResolved } = useGame();
 
   const [localVotes, setLocalVotes] = useState({});
 
   const isActive         = voting?.active;
   const eliminated       = voting?.eliminated;
   const eliminatedPlayer = players.find(p => p.id === eliminated);
+  const silencedId       = silence?.silencedId;
 
-  // Total alive players = max votes that can be cast across ALL players combined
-  const maxVotesAllowed = alivePlayers.length;
+  // Silenced player can be voted AGAINST but cannot vote themselves
+  // So max votes = alive players minus the silenced one
+  const maxVotesAllowed = alivePlayers.filter(p => p.id !== silencedId).length;
 
   useEffect(() => {
     if (isActive) {
@@ -30,7 +30,6 @@ export default function VotingPanel() {
   const maxVotes   = Math.max(0, ...Object.values(localVotes));
 
   const adjust = (id, delta) => {
-    // Don't allow total votes across all players to exceed alive player count
     if (delta > 0 && totalVotes >= maxVotesAllowed) return;
     setLocalVotes(prev => ({
       ...prev,
@@ -45,11 +44,25 @@ export default function VotingPanel() {
     });
     for (const call of calls) await call();
     await act(() => tallyVotes());
+    // Reset nightResolved so the next round requires resolve again
+    setNightResolved(false);
   };
 
   return (
     <div className="card">
       <div className="section-title">Day Voting</div>
+
+      {/* Silenced player notice */}
+      {silencedId && (
+        <div style={{
+          marginBottom: 12, padding: '8px 12px',
+          background: '#1a1a2e', border: '1px solid #3a3a6e',
+          borderRadius: 8, fontSize: 13, color: '#a0a0ff',
+        }}>
+          🤫 <strong>{players.find(p => p.id === silencedId)?.name}</strong> is silenced —
+          they cannot vote but can still be voted against.
+        </div>
+      )}
 
       {/* Result banner */}
       {!isActive && eliminated && (
@@ -63,11 +76,22 @@ export default function VotingPanel() {
         </div>
       )}
 
-      {/* Start button */}
+      {/* Start button — locked until night resolved */}
       {!isActive && (
-        <button className="btn btn-primary btn-full" onClick={handleStart}>
-          Start Voting Round
-        </button>
+        <div>
+          <button
+            className="btn btn-primary btn-full"
+            onClick={handleStart}
+            disabled={!nightResolved}
+          >
+            Start Voting Round
+          </button>
+          {!nightResolved && (
+            <p className="text-muted" style={{ fontSize: 12, marginTop: 8, textAlign: 'center' }}>
+              ⏳ Resolve night actions first before voting can begin.
+            </p>
+          )}
+        </div>
       )}
 
       {/* Voting table */}
@@ -77,13 +101,15 @@ export default function VotingPanel() {
             Go through each player aloud. Raise hands — tap + for each hand you see.
           </p>
 
-          {/* Vote budget indicator */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             marginBottom: 12, padding: '6px 12px',
             background: '#111', borderRadius: 6, border: '1px solid var(--border)'
           }}>
-            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Votes cast</span>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+              Votes cast
+              {silencedId && <span style={{ color: 'var(--text-dim)', marginLeft: 4 }}>(silenced player excluded)</span>}
+            </span>
             <span style={{
               fontSize: 14, fontWeight: 700,
               color: totalVotes >= maxVotesAllowed ? 'var(--accent)' : 'var(--gold)'
@@ -94,8 +120,9 @@ export default function VotingPanel() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
             {alivePlayers.map(player => {
-              const votes      = localVotes[player.id] ?? 0;
-              const isLeader   = votes > 0 && votes === maxVotes;
+              const votes        = localVotes[player.id] ?? 0;
+              const isLeader     = votes > 0 && votes === maxVotes;
+              const isSilenced   = player.id === silencedId;
               const plusDisabled = totalVotes >= maxVotesAllowed;
 
               return (
@@ -105,7 +132,7 @@ export default function VotingPanel() {
                     display: 'flex', alignItems: 'center', gap: 10,
                     padding: '10px 14px', borderRadius: 8,
                     background: isLeader ? '#3d1a0a' : '#111',
-                    border: `1px solid ${isLeader ? '#a03010' : 'var(--border)'}`,
+                    border: `1px solid ${isLeader ? '#a03010' : isSilenced ? '#3a3a6e' : 'var(--border)'}`,
                     transition: 'background 0.2s, border-color 0.2s',
                   }}
                 >
@@ -115,14 +142,14 @@ export default function VotingPanel() {
                     color: isLeader ? '#ff9966' : 'var(--text)',
                   }}>
                     {player.name}
-                    {isLeader && (
-                      <span style={{ marginLeft: 8, fontSize: 11, color: '#ff7744', fontWeight: 400 }}>
-                        most votes
-                      </span>
+                    {isSilenced && (
+                      <span style={{ marginLeft: 8, fontSize: 11, color: '#6060aa' }}>🤫 can't vote</span>
+                    )}
+                    {!isSilenced && isLeader && (
+                      <span style={{ marginLeft: 8, fontSize: 11, color: '#ff7744', fontWeight: 400 }}>most votes</span>
                     )}
                   </span>
 
-                  {/* − */}
                   <button
                     onClick={() => adjust(player.id, -1)}
                     disabled={votes === 0}
@@ -135,16 +162,13 @@ export default function VotingPanel() {
                     }}
                   >−</button>
 
-                  {/* Count */}
                   <span style={{
-                    minWidth: 28, textAlign: 'center',
-                    fontSize: 18, fontWeight: 700,
+                    minWidth: 28, textAlign: 'center', fontSize: 18, fontWeight: 700,
                     color: votes > 0 ? 'var(--gold)' : 'var(--text-dim)',
                   }}>
                     {votes}
                   </span>
 
-                  {/* + */}
                   <button
                     onClick={() => adjust(player.id, +1)}
                     disabled={plusDisabled}

@@ -59,6 +59,7 @@ const GameService = {
     state.revealIndex  = 0;
     state.nightActions = { mafiaTarget: null, doctorSave: null, detectiveCheck: null, detectiveResult: null };
     state.voting       = { active: false, votes: {}, eliminated: null };
+    state.silence      = { used: false, silencedId: null };
   },
 
   updateConfig(state, newConfig) {
@@ -75,8 +76,10 @@ const GameService = {
     players.forEach((player, i) => {
       player.role       = rolePool[i];
       player.isRevealed = false;
+      player.isSilenced = false;  // reset silence flag on each player
     });
     state.revealIndex = 0;
+    state.silence     = { used: false, silencedId: null };
     return players;
   },
 
@@ -103,6 +106,26 @@ const GameService = {
     return state;
   },
 
+  /**
+   * Use the Silence ability.
+   * Can only be used once per game by the Mafia.
+   * Target must be a non-Mafia alive player.
+   */
+  useSilence(state, playerId) {
+    if (state.silence.used) throw new Error('Silence ability already used this game');
+
+    const target = state.players.find(p => p.id === playerId);
+    if (!target)          throw new Error('Player not found');
+    if (!target.isAlive)  throw new Error('Cannot silence a dead player');
+    if (target.role === 'mafia') throw new Error('Cannot silence a Mafia member');
+
+    target.isSilenced       = true;
+    state.silence.used      = true;
+    state.silence.silencedId = playerId;
+
+    return state.silence;
+  },
+
   getGameState(state) {
     return {
       phase:        state.phase,
@@ -115,6 +138,7 @@ const GameService = {
       deadPlayers:  PlayerService.getDeadPlayers(state),
       nightActions: state.nightActions,
       voting:       state.voting,
+      silence:      state.silence,
       revealIndex:  state.revealIndex,
     };
   },
