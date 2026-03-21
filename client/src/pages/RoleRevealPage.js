@@ -28,6 +28,7 @@ export default function RoleRevealPage() {
     citizen: '👤',
     detective: '🔍',
     doctor: '💉',
+    dodo: '🃏',
   };
 
   const ROLE_DESC = {
@@ -35,6 +36,7 @@ export default function RoleRevealPage() {
     citizen:   'You are a CITIZEN. Vote wisely during the day.',
     detective: 'You are the DETECTIVE. Each night, investigate one player.',
     doctor:    'You are the DOCTOR. Each night, choose someone to protect.',
+    dodo:      'You are the DODO. Make the town think you are Mafia — if they vote YOU out, YOU WIN alone!',
   };
 
   return (

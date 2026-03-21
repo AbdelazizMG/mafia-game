@@ -25,6 +25,7 @@ export const startGame = () => request('POST', '/game/start');
 export const resetGame = () => request('POST', '/game/reset');
 export const nextPhase = () => request('POST', '/game/next-phase');
 export const revealNext = () => request('POST', '/game/reveal-next');
+export const updateConfig = (config) => request('POST', '/game/config', config);
 
 // Voting
 export const startVoting = () => request('POST', '/vote/start');

@@ -104,6 +104,7 @@ body {
 .role-citizen    { background: #0d2a1a; color: #5dba7e; border: 1px solid #1a5e35; }
 .role-detective  { background: #0d1e3d; color: #6baeff; border: 1px solid #1a3a7b; }
 .role-doctor     { background: #2a200d; color: #f0c060; border: 1px solid #7b5a1a; }
+.role-dodo       { background: #2a1a3d; color: #c084fc; border: 1px solid #6b21a8; }
 
 /* ── Phase indicator ── */
 .phase-bar {
@@ -202,6 +203,129 @@ h3 { font-size: 15px; font-weight: 500; color: var(--text-muted); }
 .win-screen .win-sub   { color: var(--text-muted); font-size: 16px; }
 .win-mafia   .win-title { color: #ff6b6b; }
 .win-citizens .win-title { color: #5dba7e; }
+.win-dodo     .win-title { color: #c084fc; }
+
+/* ── Premium lobby ── */
+.lobby-hero {
+  text-align: center;
+  padding: 48px 20px 36px;
+  position: relative;
+}
+.lobby-logo-emoji {
+  font-size: 88px;
+  line-height: 1;
+  display: block;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 0 32px rgba(192,57,43,0.5));
+  animation: float 4s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+.lobby-title {
+  font-size: 52px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  color: var(--accent);
+  text-shadow: 0 0 40px rgba(192,57,43,0.4);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.lobby-subtitle {
+  font-size: 14px;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.lobby-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 24px;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.lobby-divider::before,
+.lobby-divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--border);
+}
+
+/* Config panel */
+.config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.config-item {
+  background: #111;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.config-item label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+.config-item.mafia-config   label { color: #ff6b6b; }
+.config-item.dodo-config    label { color: #c084fc; }
+.config-item.doctor-config  label { color: #f0c060; }
+.config-item.detective-config label { color: #6baeff; }
+.config-fixed {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.config-fixed span {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-dim);
+  margin-left: 4px;
+}
+
+/* Player pill list in lobby */
+.player-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.player-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #1a1a1a;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 10px 5px 6px;
+  font-size: 13px;
+}
+.player-pill .pill-avatar {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #2a2020;
+  border: 1px solid #3a2020;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: var(--gold);
+}
+.player-pill button {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 0 0 4px;
+  transition: color 0.15s;
+}
+.player-pill button:hover { color: var(--accent); }
 
 /* ── Voting ── */
 .vote-count {
