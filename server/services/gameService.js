@@ -1,19 +1,24 @@
+// server/services/gameService.js
+
 const state = require('../models/state');
 const PlayerService = require('./playerService');
 
-/**
- * Build role pool from Godfather's config settings.
- * Falls back to automatic mafia count if set to 'random'.
- */
+const SCORE_MAP = {
+  citizen:   1,
+  detective: 1,   // detective is on the citizens' side
+  doctor:    1,   // doctor is on the citizens' side
+  dodo:      2,
+  mafia:     3,
+};
+
 function buildRolePool(playerCount) {
   const cfg = state.config;
 
-  // Determine mafia count
   let mafiaCount;
   if (cfg.mafiaCount === 'random') {
-    if (playerCount <= 4)       mafiaCount = 1;
-    else if (playerCount <= 9)  mafiaCount = 2;
-    else                        mafiaCount = 3;
+    if (playerCount <= 4)      mafiaCount = 1;
+    else if (playerCount <= 9) mafiaCount = 2;
+    else                       mafiaCount = 3;
   } else {
     mafiaCount = Number(cfg.mafiaCount);
   }
@@ -32,15 +37,11 @@ function buildRolePool(playerCount) {
   for (let i = 0; i < dodoCount;      i++) roles.push('dodo');
   for (let i = 0; i < detectiveCount; i++) roles.push('detective');
   for (let i = 0; i < doctorCount;    i++) roles.push('doctor');
-  // Fill the rest with citizens
-  while (roles.length < playerCount) roles.push('citizen');
+  while (roles.length < playerCount)       roles.push('citizen');
 
   return roles;
 }
 
-/**
- * Fisher-Yates shuffle — returns a new shuffled array.
- */
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -51,26 +52,31 @@ function shuffle(arr) {
 }
 
 const GameService = {
-  /** Reset everything to initial lobby state */
+
+  /**
+   * Soft reset: keeps the roster and scores intact.
+   * Only resets the active game state so names stay in the lobby.
+   */
   resetGame() {
-    state.players = [];
-    state.phase = 'lobby';
-    state.round = 0;
-    state.winner = null;
+    state.players   = [];
+    state.phase     = 'lobby';
+    state.round     = 0;
+    state.winner    = null;
     state.revealIndex = 0;
     state.nightActions = { mafiaTarget: null, doctorSave: null, detectiveCheck: null, detectiveResult: null };
-    state.voting = { active: false, votes: {}, eliminated: null };
-    // Keep config intact so Godfather doesn't have to re-enter it
+    state.voting       = { active: false, votes: {}, eliminated: null };
+    // roster and config intentionally NOT reset
   },
 
-  /** Update game configuration (mafia count, dodo, etc.) */
   updateConfig(newConfig) {
     state.config = { ...state.config, ...newConfig };
     return state.config;
   },
 
-  /** Assign roles randomly to all current players */
   assignRoles() {
+    // Build the active player list fresh from the roster on each assignment
+    PlayerService.buildPlayersFromRoster();
+
     const players = state.players;
     if (players.length < 3) throw new Error('Need at least 3 players to assign roles');
 
@@ -84,7 +90,6 @@ const GameService = {
     return players;
   },
 
-  /** Transition to role reveal phase */
   startGame() {
     if (state.players.some(p => !p.role)) throw new Error('Roles must be assigned before starting');
     state.phase = 'reveal';
@@ -92,7 +97,6 @@ const GameService = {
     return state;
   },
 
-  /** Advance to next phase: reveal → night → day → night → ... */
   nextPhase() {
     if (state.phase === 'reveal') {
       state.phase = 'night';
@@ -109,54 +113,73 @@ const GameService = {
     return state;
   },
 
-  /** Full snapshot of current game state */
   getGameState() {
     return {
-      phase: state.phase,
-      round: state.round,
-      winner: state.winner,
-      config: state.config,
-      players: state.players,
+      phase:        state.phase,
+      round:        state.round,
+      winner:       state.winner,
+      config:       state.config,
+      roster:       state.roster,
+      players:      state.players,
       alivePlayers: PlayerService.getAlivePlayers(),
-      deadPlayers: PlayerService.getDeadPlayers(),
+      deadPlayers:  PlayerService.getDeadPlayers(),
       nightActions: state.nightActions,
-      voting: state.voting,
-      revealIndex: state.revealIndex
+      voting:       state.voting,
+      revealIndex:  state.revealIndex
     };
   },
 
   /**
-   * Check win conditions after every elimination.
-   * - DoDo wins alone if voted out during the day (checked in votingService).
-   * - Citizens win if all mafia are dead.
-   * - Mafia wins if mafia count >= alive non-mafia count.
-   * Returns 'mafia' | 'citizens' | 'dodo' | null (game continues).
+   * Check win conditions and award scores to winners.
+   * eliminatedRole: the role of the player just eliminated (used for DoDo detection).
    */
   checkWinCondition(eliminatedRole) {
-    // DoDo wins if they were the one voted out during day
+    // DoDo wins if they were voted out during the day
     if (eliminatedRole === 'dodo') {
-      state.winner = 'dodo';
-      state.phase = 'ended';
+      state.winner  = 'dodo';
+      state.phase   = 'ended';
+      this._awardScores('dodo');
       return 'dodo';
     }
 
-    const alive = PlayerService.getAlivePlayers();
+    const alive         = PlayerService.getAlivePlayers();
     const aliveMafia    = alive.filter(p => p.role === 'mafia').length;
     const aliveNonMafia = alive.filter(p => p.role !== 'mafia').length;
 
     if (aliveMafia === 0) {
       state.winner = 'citizens';
-      state.phase = 'ended';
+      state.phase  = 'ended';
+      this._awardScores('citizens');
       return 'citizens';
     }
 
     if (aliveMafia >= aliveNonMafia) {
       state.winner = 'mafia';
-      state.phase = 'ended';
+      state.phase  = 'ended';
+      this._awardScores('mafia');
       return 'mafia';
     }
 
-    return null; // game continues
+    return null;
+  },
+
+  /**
+   * Award points to the winning team via the roster.
+   * winner: 'mafia' | 'citizens' | 'dodo'
+   */
+  _awardScores(winner) {
+    state.players.forEach(player => {
+      let wins = false;
+
+      if (winner === 'dodo' && player.role === 'dodo') wins = true;
+      if (winner === 'mafia' && player.role === 'mafia') wins = true;
+      if (winner === 'citizens' && player.role !== 'mafia' && player.role !== 'dodo') wins = true;
+
+      if (wins) {
+        const points = SCORE_MAP[player.role] ?? 1;
+        PlayerService.addScore(player.id, points);
+      }
+    });
   }
 };
 

@@ -1,17 +1,30 @@
+// server/models/player.js
+
 const { v4: uuidv4 } = require('uuid');
 
 /**
- * Player model factory.
- * Creates a plain object representing a player.
+ * Creates a game-session player from a roster entry.
+ * The id matches the roster entry so scores can be updated after the game.
  */
-function createPlayer(name) {
+function createPlayer(id, name) {
   return {
-    id: uuidv4(),
+    id,           // same id as roster entry
     name,
-    role: null,       // assigned later
+    role: null,
     isAlive: true,
-    isRevealed: false // used during role reveal phase
+    isRevealed: false
   };
 }
 
-module.exports = { createPlayer };
+/**
+ * Creates a brand-new roster entry (permanent, survives game resets).
+ */
+function createRosterEntry(name) {
+  return {
+    id: uuidv4(),
+    name,
+    score: 0
+  };
+}
+
+module.exports = { createPlayer, createRosterEntry };

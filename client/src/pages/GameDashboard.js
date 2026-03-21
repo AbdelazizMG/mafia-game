@@ -1,54 +1,39 @@
+// client/src/pages/GameDashboard.js
+
 import React from 'react';
 import { useGame } from '../context/GameContext';
-import { nextPhase, resetGame } from '../services/api';
+import { resetGame } from '../services/api';
 import PlayerList from '../components/PlayerList';
 import VotingPanel from '../components/VotingPanel';
 import NightActionPanel from '../components/NightActionPanel';
 
 export default function GameDashboard() {
-  const { phase, act, error, loading, nightResult, setNightResult, alivePlayers, deadPlayers } = useGame();
-
-  const isNight = phase === 'night';
-  const isDay   = phase === 'day';
-
-  const handleNextPhase = async () => {
-    setNightResult(null);
-    await act(() => nextPhase());
-  };
+  const { act, error, loading, nightResult, setNightResult, alivePlayers, deadPlayers } = useGame();
 
   const handleReset = () => act(() => resetGame());
 
   return (
     <div className="page">
-      {/* Header */}
       <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <h1 style={{ color: isNight ? '#9b8ecf' : '#e0c050' }}>
-          {isNight ? '🌙 Night Phase' : '☀️ Day Phase'}
-        </h1>
-        <button className="btn btn-secondary btn-sm" onClick={handleNextPhase} disabled={loading} style={{ marginLeft: 'auto' }}>
-          {isNight ? 'Go to Day →' : 'Go to Night →'}
-        </button>
+        <h1 style={{ color: 'var(--gold)' }}>🎮 Game in Progress</h1>
       </div>
 
       {error && <div className="error-banner">{error}</div>}
 
-      {/* Night resolution result */}
+      {/* Night resolution result banner */}
       {nightResult && (
         <div className={`night-result ${nightResult.saved ? 'saved' : 'kill'}`}>
           {nightResult.message}
           <button
             onClick={() => setNightResult(null)}
             style={{ float: 'right', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 16 }}
-          >
-            ✕
-          </button>
+          >✕</button>
         </div>
       )}
 
-      {/* Two-column layout on wide screens */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
 
-        {/* Left column: Player status */}
+        {/* Left: Player status */}
         <div>
           <div className="card">
             <div className="section-title">Alive Players ({alivePlayers.length})</div>
@@ -71,17 +56,14 @@ export default function GameDashboard() {
           )}
         </div>
 
-        {/* Right column: Phase actions */}
+        {/* Right: Night actions + Voting always visible together */}
         <div>
-          {isNight && <NightActionPanel />}
-          {isDay   && <VotingPanel />}
+          <NightActionPanel />
+          <VotingPanel />
 
-          {/* Phase transition tip */}
           <div className="card" style={{ background: 'transparent', border: '1px dashed var(--border)' }}>
             <p className="text-muted" style={{ fontSize: 13, lineHeight: 1.6 }}>
-              {isNight
-                ? 'Record all night actions above, then click "Resolve Night". After announcing results to the table, advance to Day Phase.'
-                : 'During the day, players discuss. Use the voting panel to track votes. After elimination, advance to Night Phase.'}
+              Record night actions first, resolve them, then open voting when the day discussion is over.
             </p>
           </div>
         </div>
@@ -89,7 +71,7 @@ export default function GameDashboard() {
 
       <div style={{ marginTop: 24 }}>
         <button className="btn btn-danger btn-sm" onClick={handleReset} disabled={loading}>
-          ⚠ Abandon Game &amp; Reset
+          ⚠ Abandon Game &amp; Return to Lobby
         </button>
       </div>
     </div>

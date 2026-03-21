@@ -1,37 +1,51 @@
-const state = require('../models/state');
-const { createPlayer } = require('../models/player');
+// server/services/playerService.js
 
-/**
- * PlayerService handles CRUD operations on players in the game state.
- */
+const state = require('../models/state');
+const { createPlayer, createRosterEntry } = require('../models/player');
+
 const PlayerService = {
-  /**
-   * Add a new player by name. Returns the created player.
-   */
-  addPlayer(name) {
+
+  // ── Roster (persists across games) ──────────────────────────────
+
+  /** Add a new player to the permanent roster. */
+  addToRoster(name) {
     const trimmed = name.trim();
     if (!trimmed) throw new Error('Player name cannot be empty');
-    if (state.players.find(p => p.name.toLowerCase() === trimmed.toLowerCase())) {
+    if (state.roster.find(p => p.name.toLowerCase() === trimmed.toLowerCase())) {
       throw new Error('A player with that name already exists');
     }
-    const player = createPlayer(trimmed);
-    state.players.push(player);
-    return player;
+    const entry = createRosterEntry(trimmed);
+    state.roster.push(entry);
+    return entry;
   },
 
-  /**
-   * Remove a player by ID. Returns the removed player or null.
-   */
-  removePlayer(playerId) {
-    const index = state.players.findIndex(p => p.id === playerId);
+  /** Remove a player from the roster entirely. */
+  removeFromRoster(id) {
+    const index = state.roster.findIndex(p => p.id === id);
     if (index === -1) return null;
-    const [removed] = state.players.splice(index, 1);
+    const [removed] = state.roster.splice(index, 1);
     return removed;
   },
 
   /**
-   * Assign a role to a specific player.
+   * Add points to a roster entry after a game ends.
+   * Points: citizen = 1, dodo = 2, mafia = 3
    */
+  addScore(id, points) {
+    const entry = state.roster.find(p => p.id === id);
+    if (entry) entry.score += points;
+  },
+
+  // ── Active game players ─────────────────────────────────────────
+
+  /**
+   * Populate state.players from the full roster for a new game.
+   * All roster members participate by default.
+   */
+  buildPlayersFromRoster() {
+    state.players = state.roster.map(entry => createPlayer(entry.id, entry.name));
+  },
+
   setRole(playerId, role) {
     const player = state.players.find(p => p.id === playerId);
     if (!player) throw new Error('Player not found');
@@ -39,9 +53,6 @@ const PlayerService = {
     return player;
   },
 
-  /**
-   * Mark a player as eliminated (dead).
-   */
   eliminatePlayer(playerId) {
     const player = state.players.find(p => p.id === playerId);
     if (!player) throw new Error('Player not found');
@@ -50,27 +61,10 @@ const PlayerService = {
     return player;
   },
 
-  /**
-   * Revive all players (used on game reset).
-   */
-  reviveAllPlayers() {
-    state.players.forEach(p => {
-      p.isAlive = true;
-      p.role = null;
-      p.isRevealed = false;
-    });
-  },
-
-  /**
-   * Get all alive players.
-   */
   getAlivePlayers() {
     return state.players.filter(p => p.isAlive);
   },
 
-  /**
-   * Get all dead players.
-   */
   getDeadPlayers() {
     return state.players.filter(p => !p.isAlive);
   }

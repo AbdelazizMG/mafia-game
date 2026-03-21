@@ -1,15 +1,16 @@
+// client/src/context/GameContext.js
+
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import * as api from '../services/api';
 
 const GameContext = createContext(null);
 
 export function GameProvider({ children }) {
-  const [gameState, setGameState] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [gameState, setGameState]     = useState(null);
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState(null);
   const [nightResult, setNightResult] = useState(null);
 
-  // Refresh full game state from server
   const refresh = useCallback(async () => {
     try {
       const state = await api.getGameState();
@@ -20,7 +21,6 @@ export function GameProvider({ children }) {
     }
   }, []);
 
-  // Wrap any async action: sets loading, clears error, refreshes after
   const act = useCallback(async (fn) => {
     setLoading(true);
     setError(null);
@@ -44,15 +44,16 @@ export function GameProvider({ children }) {
     setNightResult,
     refresh,
     act,
-    // Convenience helpers
-    phase: gameState?.phase,
-    players: gameState?.players || [],
+    phase:        gameState?.phase,
+    // roster has scores; players has roles/alive status
+    roster:       gameState?.roster       || [],
+    players:      gameState?.players      || [],
     alivePlayers: gameState?.alivePlayers || [],
-    deadPlayers: gameState?.deadPlayers || [],
-    voting: gameState?.voting,
+    deadPlayers:  gameState?.deadPlayers  || [],
+    voting:       gameState?.voting,
     nightActions: gameState?.nightActions,
-    winner: gameState?.winner,
-    round: gameState?.round,
+    winner:       gameState?.winner,
+    round:        gameState?.round,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
