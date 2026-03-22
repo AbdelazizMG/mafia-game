@@ -3,6 +3,7 @@ import { useGame } from '../context/GameContext';
 import { resetGame } from '../services/api';
 import StepIndicator    from '../components/StepIndicator';
 import PlayerDrawer     from '../components/PlayerDrawer';
+import Leaderboard      from '../components/Leaderboard';
 import NightActionsStep from './steps/NightActionsStep';
 import NightResultStep  from './steps/NightResultStep';
 import DiscussionStep   from './steps/DiscussionStep';
@@ -17,15 +18,16 @@ const STEP_VOTED   = 4;
 
 export default function GameDashboard() {
   const { act, error, alivePlayers, deadPlayers, round } = useGame();
-  const [step,       setStep]       = useState(STEP_NIGHT);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [step,            setStep]            = useState(STEP_NIGHT);
+  const [drawerOpen,      setDrawerOpen]      = useState(false);
+  const [leaderboardOpen, setLeaderboardOpen] = useState(false);
 
-  const handleReset           = () => act(() => resetGame());
-  const handleNightResolved   = () => setStep(STEP_RESULT);
-  const handleStartDay        = () => setStep(STEP_DISCUSS);
-  const handleDiscussionDone  = () => setStep(STEP_VOTE);
-  const handleVotingDone      = () => setStep(STEP_VOTED);
-  const handleNextNight       = () => setStep(STEP_NIGHT);
+  const handleReset          = () => act(() => resetGame());
+  const handleNightResolved  = () => setStep(STEP_RESULT);
+  const handleStartDay       = () => setStep(STEP_DISCUSS);
+  const handleDiscussionDone = () => setStep(STEP_VOTE);
+  const handleVotingDone     = () => setStep(STEP_VOTED);
+  const handleNextNight      = () => setStep(STEP_NIGHT);
 
   return (
     <div className="step-screen">
@@ -33,7 +35,6 @@ export default function GameDashboard() {
 
       <div className="step-body">
         {error && <div className="error-banner" style={{ marginBottom: 16 }}>{error}</div>}
-
         {step === STEP_NIGHT   && <NightActionsStep onDone={handleNightResolved}  />}
         {step === STEP_RESULT  && <NightResultStep  onDone={handleStartDay}       />}
         {step === STEP_DISCUSS && <DiscussionStep   onDone={handleDiscussionDone} />}
@@ -44,11 +45,7 @@ export default function GameDashboard() {
       {/* Sticky footer */}
       <div className="step-footer">
         {step === STEP_RESULT && (
-          <button
-            className="btn btn-success btn-full"
-            style={{ fontSize: 15, padding: 13 }}
-            onClick={handleStartDay}
-          >
+          <button className="btn btn-success btn-full" style={{ fontSize: 15, padding: 13 }} onClick={handleStartDay}>
             ☀️ Start Day Discussion
           </button>
         )}
@@ -61,6 +58,9 @@ export default function GameDashboard() {
             <button className="btn btn-secondary btn-sm" onClick={() => setDrawerOpen(true)}>
               👥 Players
             </button>
+            <button className="btn btn-secondary btn-sm" onClick={() => setLeaderboardOpen(true)}>
+              🏆
+            </button>
             <button className="btn btn-danger btn-sm" onClick={handleReset}>
               ✕ End
             </button>
@@ -68,7 +68,8 @@ export default function GameDashboard() {
         </div>
       </div>
 
-      {drawerOpen && <PlayerDrawer onClose={() => setDrawerOpen(false)} />}
+      {drawerOpen      && <PlayerDrawer  onClose={() => setDrawerOpen(false)}      />}
+      {leaderboardOpen && <Leaderboard   onClose={() => setLeaderboardOpen(false)} />}
     </div>
   );
 }

@@ -1,5 +1,3 @@
-// server/services/gameService.js
-
 const PlayerService = require('./playerService');
 
 const SCORE_MAP = {
@@ -12,7 +10,6 @@ const SCORE_MAP = {
 
 function buildRolePool(state, playerCount) {
   const cfg = state.config;
-
   let mafiaCount;
   if (cfg.mafiaCount === 'random') {
     if (playerCount <= 4)      mafiaCount = 1;
@@ -21,16 +18,13 @@ function buildRolePool(state, playerCount) {
   } else {
     mafiaCount = Number(cfg.mafiaCount);
   }
-
   const dodoCount      = Number(cfg.dodoCount)      || 0;
   const detectiveCount = Number(cfg.detectiveCount) || 0;
   const doctorCount    = Number(cfg.doctorCount)    || 0;
-
-  const specialCount = mafiaCount + dodoCount + detectiveCount + doctorCount;
+  const specialCount   = mafiaCount + dodoCount + detectiveCount + doctorCount;
   if (specialCount >= playerCount) {
     throw new Error('Too many special roles for the number of players.');
   }
-
   const roles = [];
   for (let i = 0; i < mafiaCount;     i++) roles.push('mafia');
   for (let i = 0; i < dodoCount;      i++) roles.push('dodo');
@@ -71,12 +65,11 @@ const GameService = {
     PlayerService.buildPlayersFromRoster(state);
     const players = state.players;
     if (players.length < 3) throw new Error('Need at least 3 players to assign roles');
-
     const rolePool = shuffle(buildRolePool(state, players.length));
     players.forEach((player, i) => {
       player.role       = rolePool[i];
       player.isRevealed = false;
-      player.isSilenced = false;  // reset silence flag on each player
+      player.isSilenced = false;
     });
     state.revealIndex = 0;
     state.silence     = { used: false, silencedId: null };
@@ -102,33 +95,10 @@ const GameService = {
       state.round += 1;
       state.nightActions = { mafiaTarget: null, doctorSave: null, detectiveCheck: null, detectiveResult: null };
       state.voting       = { active: false, votes: {}, eliminated: null };
-
-      // Lift silence — effect only lasts one round (the night it was applied + the following day vote)
       state.players.forEach(p => { p.isSilenced = false; });
       state.silence.silencedId = null;
-      // Note: silence.used stays true so the ability cannot be reused
     }
     return state;
-  },
-
-  /**
-   * Use the Silence ability.
-   * Can only be used once per game by the Mafia.
-   * Target must be a non-Mafia alive player.
-   */
-  useSilence(state, playerId) {
-    if (state.silence.used) throw new Error('Silence ability already used this game');
-
-    const target = state.players.find(p => p.id === playerId);
-    if (!target)          throw new Error('Player not found');
-    if (!target.isAlive)  throw new Error('Cannot silence a dead player');
-    if (target.role === 'mafia') throw new Error('Cannot silence a Mafia member');
-
-    target.isSilenced       = true;
-    state.silence.used      = true;
-    state.silence.silencedId = playerId;
-
-    return state.silence;
   },
 
   getGameState(state) {
@@ -155,25 +125,21 @@ const GameService = {
       this._awardScores(state, 'dodo');
       return 'dodo';
     }
-
     const alive         = PlayerService.getAlivePlayers(state);
     const aliveMafia    = alive.filter(p => p.role === 'mafia').length;
     const aliveNonMafia = alive.filter(p => p.role !== 'mafia').length;
-
     if (aliveMafia === 0) {
       state.winner = 'citizens';
       state.phase  = 'ended';
       this._awardScores(state, 'citizens');
       return 'citizens';
     }
-
     if (aliveMafia >= aliveNonMafia) {
       state.winner = 'mafia';
       state.phase  = 'ended';
       this._awardScores(state, 'mafia');
       return 'mafia';
     }
-
     return null;
   },
 
@@ -185,7 +151,8 @@ const GameService = {
       if (winner === 'citizens' && player.role !== 'mafia' && player.role !== 'dodo') wins = true;
       if (wins) {
         const points = SCORE_MAP[player.role] ?? 1;
-        PlayerService.addScore(state, player.id, points);
+        // Pass role so history can record which role earned the points
+        PlayerService.addScore(state, player.id, points, player.role);
       }
     });
   },

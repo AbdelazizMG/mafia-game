@@ -1,7 +1,5 @@
-// server/controllers/playerController.js
-
 const PlayerService = require('../services/playerService');
-const { getRoom } = require('../models/state');
+const { getRoom }   = require('../models/state');
 
 const PlayerController = {
   getPlayers(req, res) {
@@ -32,7 +30,8 @@ const PlayerController = {
 
   resetScores(req, res) {
     const state = getRoom(req.params.room);
-    state.roster.forEach(p => p.score = 0);
+    // Clear scores AND history together
+    state.roster.forEach(p => { p.score = 0; p.history = []; });
     res.json({ roster: state.roster });
   },
 };

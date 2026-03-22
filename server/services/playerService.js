@@ -1,11 +1,5 @@
-// server/services/playerService.js
-
 const { createPlayer, createRosterEntry } = require('../models/player');
 
-/**
- * PlayerService now receives `state` as a parameter (the room's state).
- * No more importing the global singleton.
- */
 const PlayerService = {
 
   addToRoster(state, name) {
@@ -26,9 +20,13 @@ const PlayerService = {
     return removed;
   },
 
-  addScore(state, id, points) {
+  addScore(state, id, points, role) {
     const entry = state.roster.find(p => p.id === id);
-    if (entry) entry.score += points;
+    if (!entry) return;
+    entry.score += points;
+    // Push to front of history, keep last 8 only
+    entry.history.unshift({ role, points });
+    if (entry.history.length > 8) entry.history.pop();
   },
 
   buildPlayersFromRoster(state) {
@@ -37,7 +35,7 @@ const PlayerService = {
 
   eliminatePlayer(state, playerId) {
     const player = state.players.find(p => p.id === playerId);
-    if (!player) throw new Error('Player not found');
+    if (!player)         throw new Error('Player not found');
     if (!player.isAlive) throw new Error('Player is already dead');
     player.isAlive = false;
     return player;
@@ -49,7 +47,7 @@ const PlayerService = {
 
   getDeadPlayers(state) {
     return state.players.filter(p => !p.isAlive);
-  }
+  },
 };
 
 module.exports = PlayerService;
