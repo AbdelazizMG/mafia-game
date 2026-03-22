@@ -1,5 +1,3 @@
-// client/src/App.js
-
 import React, { useEffect, useState } from 'react';
 import './index.css';
 import { GameProvider, useGame } from './context/GameContext';
@@ -18,7 +16,24 @@ function Router() {
   if (!phase || phase === 'lobby') return <LobbyPage />;
   if (phase === 'reveal')          return <RoleRevealPage />;
   if (phase === 'ended')           return <WinScreen />;
+  // night or day → step-by-step game dashboard (no PhaseIndicator needed here)
   return <GameDashboard />;
+}
+
+function AppShell({ onLeave, room }) {
+  const { phase } = useGame();
+  // Only show the top PhaseIndicator outside the game (lobby, reveal, ended)
+  // During game, StepIndicator inside GameDashboard takes over
+  const showTopBar = !phase || phase === 'lobby' || phase === 'reveal' || phase === 'ended';
+
+  return (
+    <div className="app">
+      {showTopBar && (
+        <PhaseIndicator roomCode={room} onLeave={onLeave} />
+      )}
+      <Router />
+    </div>
+  );
 }
 
 export default function App() {
@@ -38,13 +53,7 @@ export default function App() {
 
   return (
     <GameProvider>
-      <div className="app">
-        <PhaseIndicator
-          roomCode={room}
-          onLeave={handleLeave}
-        />
-        <Router />
-      </div>
+      <AppShell onLeave={handleLeave} room={room} />
     </GameProvider>
   );
 }

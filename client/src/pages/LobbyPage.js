@@ -1,5 +1,3 @@
-// client/src/pages/LobbyPage.js
-
 import React, { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
 import { addPlayer, removePlayer, assignRoles, startGame, resetGame, updateConfig, resetScores } from '../services/api';
@@ -10,7 +8,7 @@ function initials(name) {
 
 export default function LobbyPage() {
   const { roster, players, act, error, loading, refresh, gameState } = useGame();
-  const [name, setName]             = useState('');
+  const [name, setName]                   = useState('');
   const [rolesAssigned, setRolesAssigned] = useState(false);
   const [cfg, setCfg] = useState({
     mafiaCount: 'random',
@@ -26,10 +24,11 @@ export default function LobbyPage() {
   }, [gameState]);
 
   useEffect(() => {
+    // rolesAssigned = roles have been assigned to active players
     setRolesAssigned(players.length > 0 && players.every(p => p.role));
   }, [players]);
 
-  const handleAdd = async (e) => {
+  const handleAdd    = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
     await act(() => addPlayer(name.trim()));
@@ -44,16 +43,17 @@ export default function LobbyPage() {
     await act(() => updateConfig(next));
   };
 
-  const handleAssign    = () => act(() => assignRoles());
-  const handleStart     = () => act(() => startGame());
-  const handleReset     = () => act(() => resetGame());
+  const handleAssign      = () => act(() => assignRoles());
+  const handleStart       = () => act(() => startGame());
+  const handleReset       = () => act(() => resetGame());
   const handleResetScores = () => { if (window.confirm('Reset all scores to 0?')) act(() => resetScores()); };
 
+  // Use roster.length for player count (roster persists across games)
   const estMafia = cfg.mafiaCount === 'random'
     ? (roster.length <= 4 ? 1 : roster.length <= 9 ? 2 : 3)
     : Number(cfg.mafiaCount);
 
-  // Merge roster scores into the active players list for display
+  // Merge roster scores with active player roles for display
   const displayList = roster.map(r => {
     const active = players.find(p => p.id === r.id);
     return { ...r, role: active?.role || null };
@@ -62,7 +62,7 @@ export default function LobbyPage() {
   return (
     <div className="page" style={{ maxWidth: 580 }}>
 
-      {/* ── Hero ── */}
+      {/* Hero */}
       <div className="lobby-hero">
         <span className="lobby-logo-emoji">🎭</span>
         <div className="lobby-title">MAFIA</div>
@@ -71,10 +71,11 @@ export default function LobbyPage() {
 
       {error && <div className="error-banner">{error}</div>}
 
-      {/* ── Role Config ── */}
+      {/* Role Config */}
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="lobby-divider">Role Configuration</div>
         <div className="config-grid">
+
           <div className="config-item mafia-config">
             <label>🔪 Mafia</label>
             <select
@@ -122,7 +123,7 @@ export default function LobbyPage() {
         )}
       </div>
 
-      {/* ── Players + Scores ── */}
+      {/* Players & Scores */}
       <div className="card">
         <div className="lobby-divider">Players & Scores</div>
 
@@ -141,7 +142,6 @@ export default function LobbyPage() {
           </button>
         </form>
 
-        {/* Scoreboard list */}
         {roster.length > 0 && (
           <div style={{ marginTop: 14 }}>
             {displayList.map(p => (
@@ -153,7 +153,6 @@ export default function LobbyPage() {
                   <span className={`role-badge role-${p.role}`} style={{ fontSize: 10, padding: '1px 6px' }}>{p.role}</span>
                 )}
 
-                {/* Score badge */}
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 4,
                   background: '#1a1a1a', border: '1px solid var(--border)',
@@ -163,7 +162,6 @@ export default function LobbyPage() {
                   <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>pts</span>
                 </div>
 
-                {/* Only allow removal if roles not yet assigned */}
                 {!rolesAssigned && (
                   <button className="btn btn-danger btn-sm" onClick={() => handleRemove(p.id)}>✕</button>
                 )}
@@ -178,7 +176,6 @@ export default function LobbyPage() {
           </p>
         )}
 
-        {/* Progress bar */}
         {roster.length > 0 && (
           <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ flex: 1, height: 4, background: '#222', borderRadius: 2, overflow: 'hidden' }}>
@@ -196,7 +193,7 @@ export default function LobbyPage() {
         )}
       </div>
 
-      {/* ── Actions ── */}
+      {/* Actions */}
       {roster.length >= 3 && (
         <div className="card" style={{ textAlign: 'center' }}>
           {!rolesAssigned ? (
@@ -224,7 +221,6 @@ export default function LobbyPage() {
         </div>
       )}
 
-      {/* Bottom actions */}
       {roster.length > 0 && (
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 8 }}>
           <button className="btn btn-secondary btn-sm" onClick={handleResetScores} disabled={loading}>

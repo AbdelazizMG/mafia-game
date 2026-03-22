@@ -1,79 +1,74 @@
-// client/src/pages/GameDashboard.js
-
-import React from 'react';
+import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { resetGame } from '../services/api';
-import PlayerList from '../components/PlayerList';
-import VotingPanel from '../components/VotingPanel';
-import NightActionPanel from '../components/NightActionPanel';
+import StepIndicator    from '../components/StepIndicator';
+import PlayerDrawer     from '../components/PlayerDrawer';
+import NightActionsStep from './steps/NightActionsStep';
+import NightResultStep  from './steps/NightResultStep';
+import DiscussionStep   from './steps/DiscussionStep';
+import VotingStep       from './steps/VotingStep';
+import VoteResultStep   from './steps/VoteResultStep';
+
+const STEP_NIGHT   = 0;
+const STEP_RESULT  = 1;
+const STEP_DISCUSS = 2;
+const STEP_VOTE    = 3;
+const STEP_VOTED   = 4;
 
 export default function GameDashboard() {
-  const { act, error, loading, nightResult, setNightResult, alivePlayers, deadPlayers } = useGame();
+  const { act, error, alivePlayers, deadPlayers, round } = useGame();
+  const [step,       setStep]       = useState(STEP_NIGHT);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const handleReset = () => act(() => resetGame());
+  const handleReset           = () => act(() => resetGame());
+  const handleNightResolved   = () => setStep(STEP_RESULT);
+  const handleStartDay        = () => setStep(STEP_DISCUSS);
+  const handleDiscussionDone  = () => setStep(STEP_VOTE);
+  const handleVotingDone      = () => setStep(STEP_VOTED);
+  const handleNextNight       = () => setStep(STEP_NIGHT);
 
   return (
-    <div className="page">
-      <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <h1 style={{ color: 'var(--gold)' }}>🎮 Game in Progress</h1>
+    <div className="step-screen">
+      <StepIndicator currentStep={step} />
+
+      <div className="step-body">
+        {error && <div className="error-banner" style={{ marginBottom: 16 }}>{error}</div>}
+
+        {step === STEP_NIGHT   && <NightActionsStep onDone={handleNightResolved}  />}
+        {step === STEP_RESULT  && <NightResultStep  onDone={handleStartDay}       />}
+        {step === STEP_DISCUSS && <DiscussionStep   onDone={handleDiscussionDone} />}
+        {step === STEP_VOTE    && <VotingStep       onDone={handleVotingDone}     />}
+        {step === STEP_VOTED   && <VoteResultStep   onDone={handleNextNight}      />}
       </div>
 
-      {error && <div className="error-banner">{error}</div>}
-
-      {/* Night resolution result banner */}
-      {nightResult && (
-        <div className={`night-result ${nightResult.saved ? 'saved' : 'kill'}`}>
-          {nightResult.message}
+      {/* Sticky footer */}
+      <div className="step-footer">
+        {step === STEP_RESULT && (
           <button
-            onClick={() => setNightResult(null)}
-            style={{ float: 'right', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 16 }}
-          >✕</button>
-        </div>
-      )}
+            className="btn btn-success btn-full"
+            style={{ fontSize: 15, padding: 13 }}
+            onClick={handleStartDay}
+          >
+            ☀️ Start Day Discussion
+          </button>
+        )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-
-        {/* Left: Player status */}
-        <div>
-          <div className="card">
-            <div className="section-title">Alive Players ({alivePlayers.length})</div>
-            <PlayerList showRoles showStatus />
-          </div>
-
-          {deadPlayers.length > 0 && (
-            <div className="card">
-              <div className="section-title">Eliminated ({deadPlayers.length})</div>
-              {deadPlayers.map(p => (
-                <div key={p.id} className="player-item dead">
-                  <div className="player-avatar" style={{ opacity: 0.5 }}>
-                    {p.name.slice(0, 2).toUpperCase()}
-                  </div>
-                  <span className="player-name">{p.name}</span>
-                  <span className={`role-badge role-${p.role}`}>{p.role}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Right: Night actions + Voting always visible together */}
-        <div>
-          <NightActionPanel />
-          <VotingPanel />
-
-          <div className="card" style={{ background: 'transparent', border: '1px dashed var(--border)' }}>
-            <p className="text-muted" style={{ fontSize: 13, lineHeight: 1.6 }}>
-              Record night actions first, resolve them, then open voting when the day discussion is over.
-            </p>
+        <div className="mini-bar">
+          <span className="mini-bar-stat">
+            Round {round} · {alivePlayers.length} alive · {deadPlayers.length} out
+          </span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-secondary btn-sm" onClick={() => setDrawerOpen(true)}>
+              👥 Players
+            </button>
+            <button className="btn btn-danger btn-sm" onClick={handleReset}>
+              ✕ End
+            </button>
           </div>
         </div>
       </div>
 
-      <div style={{ marginTop: 24 }}>
-        <button className="btn btn-danger btn-sm" onClick={handleReset} disabled={loading}>
-          ⚠ Abandon Game &amp; Return to Lobby
-        </button>
-      </div>
+      {drawerOpen && <PlayerDrawer onClose={() => setDrawerOpen(false)} />}
     </div>
   );
 }

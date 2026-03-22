@@ -4,11 +4,11 @@ import * as api from '../services/api';
 const GameContext = createContext(null);
 
 export function GameProvider({ children }) {
-  const [gameState, setGameState]       = useState(null);
-  const [loading, setLoading]           = useState(false);
-  const [error, setError]               = useState(null);
-  const [nightResult, setNightResult]   = useState(null);
-  const [nightResolved, setNightResolved] = useState(false); // true after resolve, reset each new night
+  const [gameState, setGameState]         = useState(null);
+  const [loading, setLoading]             = useState(false);
+  const [error, setError]                 = useState(null);
+  const [nightResult, setNightResult]     = useState(null);
+  const [nightResolved, setNightResolved] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -40,10 +40,8 @@ export function GameProvider({ children }) {
     gameState,
     loading,
     error,
-    nightResult,
-    setNightResult,
-    nightResolved,
-    setNightResolved,
+    nightResult,    setNightResult,
+    nightResolved,  setNightResolved,
     refresh,
     act,
     phase:        gameState?.phase,
