@@ -27,12 +27,17 @@ const VotingService = {
       return { eliminated: null, votes };
     }
 
-    const topId = Object.entries(votes).sort((a, b) => b[1] - a[1])[0][0];
+    const topId            = Object.entries(votes).sort((a, b) => b[1] - a[1])[0][0];
     const eliminatedPlayer = state.players.find(p => p.id === topId);
 
     PlayerService.eliminatePlayer(state, topId);
     state.voting.eliminated = topId;
     state.voting.active     = false;
+
+    // Lift silence after voting ends — effect expires after the day round
+    state.players.forEach(p => { p.isSilenced = false; });
+    state.silence.silencedId = null;
+    // silence.used stays true — ability is one-time per game
 
     GameService.checkWinCondition(state, eliminatedPlayer?.role);
     return { eliminated: topId, votes };

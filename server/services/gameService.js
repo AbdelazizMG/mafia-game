@@ -102,6 +102,11 @@ const GameService = {
       state.round += 1;
       state.nightActions = { mafiaTarget: null, doctorSave: null, detectiveCheck: null, detectiveResult: null };
       state.voting       = { active: false, votes: {}, eliminated: null };
+
+      // Lift silence — effect only lasts one round (the night it was applied + the following day vote)
+      state.players.forEach(p => { p.isSilenced = false; });
+      state.silence.silencedId = null;
+      // Note: silence.used stays true so the ability cannot be reused
     }
     return state;
   },
